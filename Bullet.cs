@@ -5,6 +5,7 @@ using UnityEngine;
 public class Bullet : Photon.MonoBehaviour {
 
     public bool movingRight = true;
+    //public GameObject playerOwner;
     float speed = 30f;
 
 	void Start () {
@@ -51,6 +52,6 @@ public class Bullet : Photon.MonoBehaviour {
 
     public void switchTheDir ()
     {
-        photonView.RPC("switchDir", PhotonTargets.All);
+        photonView.RPC("switchDir", PhotonTargets.AllViaServer);
     }
 }

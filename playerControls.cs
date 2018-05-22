@@ -1,14 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class playerControls : Photon.MonoBehaviour {
     public GameObject playerCam, bulletPrefab;
     public Transform whereToShootFrom;
     private float moveSpeed = 14f;
-    private bool dead = false;
+    private bool dead = false, touchingGround = false, touchingPlayerHead = false;
     public bool left = false, right = false;
-    private bool isGrounded = false;
     private Rigidbody2D rb;
     public AudioClip pistolSound;
     private AudioSource aSource;
@@ -32,6 +32,10 @@ public class playerControls : Photon.MonoBehaviour {
 		if (photonView.isMine && !dead)
         {
             CheckMovement();
+        }
+        if (transform.position.y < -18)
+        {
+            Respawn();
         }
 	}
 
@@ -101,7 +105,8 @@ public class playerControls : Photon.MonoBehaviour {
             GameObject bullet = PhotonNetwork.Instantiate(bulletPrefab.name, whereToShootFrom.position, Quaternion.identity, 0) as GameObject;
             if (transform.localScale.x < 0)
             {
-                bullet.GetComponent<Bullet>().switchTheDir(); 
+                //bullet.GetComponent<Bullet>().switchTheDir();  
+                bullet.GetComponent<Bullet>().photonView.RPC("switchDir", PhotonTargets.All);
             }
             photonView.RPC("bulletSound", PhotonTargets.All);
         }
@@ -122,7 +127,7 @@ public class playerControls : Photon.MonoBehaviour {
 
     public void Jump ()
     {
-        if (!dead && isGrounded)
+        if (!dead && (touchingPlayerHead || touchingGround))
         {
             //isGrounded = false;
             GetComponent<Rigidbody2D>().AddForce(new Vector2(0, 16), ForceMode2D.Impulse);
@@ -149,6 +154,7 @@ public class playerControls : Photon.MonoBehaviour {
     private void BulletHit ()
     {
         Vector3 playerRot = transform.localEulerAngles;
+        dead = true;
         if (transform.localScale.x > 0)
         {
             playerRot.z = 90;
@@ -158,6 +164,13 @@ public class playerControls : Photon.MonoBehaviour {
             playerRot.z = -90;
         }
         transform.localEulerAngles = playerRot;
+        if (photonView.isMine)
+        {
+            deathCounter.myDeath();
+        } else
+        {
+            deathCounter.enemyDeath();
+        }
         Invoke("Respawn", 2f);
     }
 
@@ -172,18 +185,19 @@ public class playerControls : Photon.MonoBehaviour {
         {
             playerCam.transform.parent = transform;
             Vector3 camPos = playerCam.transform.position;
-            camPos.y = 0f;
+            camPos.y = 0.08f;
             camPos.x = 0f;
             playerCam.transform.position = camPos;
         }
+        transform.position = new Vector3(Random.Range(-20f, 20f), Random.Range(4f, 7.2f), 0);
     }
 
     public void BulletEncounter ()
     {
-        if (photonView.isMine)
+        if (photonView.isMine && !dead)
         {
             photonView.RPC("BulletHit", PhotonTargets.All);
-            dead = true;
+            //dead = true;
             //Vector3 camRot = playerCam.transform.localEulerAngles;
             //if (transform.localScale.x > 0)
             //{
@@ -211,9 +225,13 @@ public class playerControls : Photon.MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.tag == "Floor" || collision.tag == "Player")
+        if (collision.tag == "Floor")
         {
-            isGrounded = true;
+            touchingGround = true;
+        } 
+        if (collision.tag == "PlayerHead")
+        {
+            touchingPlayerHead = true;
         }
     }
 
@@ -221,7 +239,23 @@ public class playerControls : Photon.MonoBehaviour {
     {
         if (collision.tag == "Floor")
         {
-            isGrounded = false;
+            touchingGround = false;
+        } 
+        if (collision.tag == "PlayerHead")
+        {
+            touchingPlayerHead = false;
+        }
+    }
+
+    private void OnTriggerStay(Collider collision)
+    {
+        if (collision.tag == "Floor")
+        {
+            touchingGround = true;
+        }
+        if (collision.tag == "PlayerHead")
+        {
+            touchingPlayerHead = true;
         }
     }
 }

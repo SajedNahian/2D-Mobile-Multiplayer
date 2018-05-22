@@ -45,7 +45,7 @@ public class photonHandler : MonoBehaviour {
     private void spawnPlayer()
     {
         //PhotonNetwork.Instantiate(mainPlayer.name, mainPlayer.transform.position, mainPlayer.transform.rotation, 0);
-        PhotonNetwork.Instantiate(mainPlayer.name, new Vector3(0, 4, 0), mainPlayer.transform.rotation, 0);
+        PhotonNetwork.Instantiate(mainPlayer.name, new Vector3(Random.Range(-20f, 20f), Random.Range(4f, 7.2f), 0), mainPlayer.transform.rotation, 0);
 
     }
 
